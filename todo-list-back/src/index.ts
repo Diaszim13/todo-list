@@ -1,50 +1,77 @@
 // src/index.ts
 import express from "express";
 import { v4 as uuidv4 } from "uuid"; // Para gerar IDs únicos
+import pool from "./db/db.ts"
 
 const app = express();
 const port = 3000;
 
 app.use(express.json());
 
-// Simulação de um banco de dados em memória
-let todos: { id: string, title: string, completed: boolean }[] = [];
 
 // Rotas
 
 // 1. Obter todos os to-dos
-app.get("/todos", (req, res) => {
-    res.json(todos);
+app.get("/todos", async (req, res) => {
+    try {
+        const [rows] = await pool.query("select * from todos");
+        res.json(rows)
+    } catch (err) {
+        res.status(500).json({ error: "Erro" })
+    }
 });
 
 // 2. Criar um novo to-do
-app.post("/todos", (req, res) => {
+app.post("/todos", async (req, res) => {
     const { title } = req.body;
     const newTodo = { id: uuidv4(), title, completed: false };
-    todos.push(newTodo);
-    res.status(201).json(newTodo);
+
+    try {
+        await pool.query("insert into todos values (?,?,?)", [
+            newTodo.id,
+            newTodo.title,
+            newTodo.completed
+        ])
+        res.status(201).json(newTodo);
+    } catch (err) {
+        res.status(500).json({ err: "erro ao cadastrar" })
+    }
 });
 
 // 3. Atualizar um to-do
-app.put("/todos/:id", (req, res) => {
+app.put("/todos/:id", async (req, res) => {
     const { id } = req.params;
     const { title, completed } = req.body;
 
-    const todoIndex = todos.findIndex(todo => todo.id === id);
-
-    if (todoIndex > -1) {
-        todos[todoIndex] = { ...todos[todoIndex], title, completed };
-        res.json(todos[todoIndex]);
-    } else {
-        res.status(404).json({ message: "To-Do not found" });
+    try {
+        const [result] = await pool.query("update todos set TITLE = ?, complete = ? WHERE id = ?", [
+            title, completed, [id]
+        ])
+        if (result.affectedRows > 0) {
+            res.json({ result });
+        } else {
+            res.status(400).json({ err: "nao encontrad" });        ==2-33-0epw[ep[w;;'    ']]
+        }
+    } catch ($e) {
+        res.status(400).json({ err: "nao encontrad" });
     }
 });
 
 // 4. Deletar um to-do
-app.delete("/todos/:id", (req, res) => {
+app.delete("/todos/:id", async (req, res) => {
     const { id } = req.params;
-    todos = todos.filter(todo => todo.id !== id);
-    res.status(204).send();
+
+    try {
+        const [result] = await pool.query("DELETE FROM todos WHERE id = ?", [id]);
+
+        if (result.affectedRows > 0) {
+            res.status(204).send();
+        } else {
+            res.status(404).json({ message: "To-Do não encontrado" });
+        }
+    } catch (err) {
+        res.status(500).json({ error: "Erro ao deletar to-do" });
+    }
 });
 
 // Iniciar o servidor
