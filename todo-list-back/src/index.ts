@@ -2,7 +2,7 @@
 import express from "express";
 import { v4 as uuidv4 } from "uuid"; // Para gerar IDs únicos
 import pool from "./db/db.ts"
-
+import type { ResultSetHeader } from "mysql2";
 const app = express();
 const port = 3000;
 
@@ -44,13 +44,13 @@ app.put("/todos/:id", async (req, res) => {
     const { title, completed } = req.body;
 
     try {
-        const [result] = await pool.query("update todos set TITLE = ?, complete = ? WHERE id = ?", [
+        const [result] = await pool.query < ResultSetHeader>("update todos set TITLE = ?, complete = ? WHERE id = ?", [
             title, completed, [id]
         ])
         if (result.affectedRows > 0) {
             res.json({ result });
         } else {
-            res.status(400).json({ err: "nao encontrad" });        ==2-33-0epw[ep[w;;'    ']]
+            res.status(400).json({ err: "nao encontrad" });
         }
     } catch ($e) {
         res.status(400).json({ err: "nao encontrad" });
@@ -62,7 +62,7 @@ app.delete("/todos/:id", async (req, res) => {
     const { id } = req.params;
 
     try {
-        const [result] = await pool.query("DELETE FROM todos WHERE id = ?", [id]);
+        const [result] = await pool.query<ResultSetHeader>("DELETE FROM todos WHERE id = ?", [id]);
 
         if (result.affectedRows > 0) {
             res.status(204).send();
